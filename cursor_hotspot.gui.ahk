@@ -1,6 +1,6 @@
 ﻿#NoEnv ; (MW:2022) (MW:2022)
 #persistent 
-ListLines,Off 
+ListLines,on
 #Singleinstance,	Force
 DetectHiddenWindows,On
 DetectHiddenText,	On
@@ -16,8 +16,8 @@ Setworkingdir,% (ahkexe:= splitpath(A_AhkPath)).dir
 #include	C:\Script\AHK\- _ _ LiB\GDI+_All.ahk
 
 global  parw_init:=205, Scale_Factor:=1, Marg_Parent:=25, Marg_Cur:= 15, Marg_Hic:=40,
-
-IconPath:="C:\Icon\- Icons\- CuRS0R\cursor(9).cur" ; IconPath:="C:\Icon\- Icons\- CuRS0R\12.cur" IconPath:="C:\Icon\- Icons\- CuRS0R\ALLSEEING.cur" 
+(!(%0%=0))? ImagePath:= A_Args[1] : ImagePath:= "C:\Icon\- Icons\- CuRS0R\cursor(9).cur" 
+;imagepath:="C:\Icon\- Icons\- CuRS0R\cursor(9).cur" ; imagepath:="C:\Icon\- Icons\- CuRS0R\12.cur" imagepath:="C:\Icon\- Icons\- CuRS0R\ALLSEEING.cur" 
 
 (!PtrP? PtrP:=	(A_PtrSize=8)?	"uptr*"	:	"Uint*") 
  (!Ptr?	Ptr:=	(A_PtrSize=8)?	"ptr"	:	"Uint")
@@ -28,30 +28,34 @@ IconPath:="C:\Icon\- Icons\- CuRS0R\cursor(9).cur" ; IconPath:="C:\Icon\- Icons\
 ;OnMessage(0x0010,"WM_CLOSE") 		 ;OnMessage(0x0047,"WM_WINDOWPOSCHANGED") 
 ;OnMessage(0x0002,"WM_CLOSE") 		 ;WM_DESTROY := 0x0002 
  OnMessage(0x0101,"WM_KEYUP")		 ;ExitApp()) 
+ OnMessage(0x404,"AHK_NOTIFYICON")
  OnMessage(0x0203,"OnDoubleClick") 	 ;OnMessage(0x0047,"WM_WINDOWPOSCHANGED") 
  OnMessage(0x0205,"OnRBUp") 		 ;OnMessage(0x0047,"WM_WINDOWPOSCHANGED") 
  OnMessage(0x0004,"OnRBUp") 		 ;WM_DESTROY := 0x0002
  OnMessage(0x0015,"WM_SYSCOLORCHANGE")
- OnExit("ExitFunc")
+ OnMessage(0x0002,"guiClose")
+ OnMessage(0x0082,"guiClose")
+ 
+ ;OnExit,ExitFunc
 
 loop,parse,% "VarZ,MeNuZ",`,
 	 gosub,% a_loopfield
 
 try,pToken:= Gdip_Startup()
 
-if !fileexist(IconPath) {
-	MsgB("check	.cur")
-	FileSelectFile,IconPath,,C:\Icon\- Icons\- CuRS0R\,% "Open Cur:",*.cur
+if !fileexist(imagepath) {
+	MsgB("check	.cur`n" strlen(A_Args[1]) imagepath)
+	FileSelectFile,imagepath,,C:\Icon\- Icons\- CuRS0R\,% "Open Cur:",*.cur
 }
-ip:=splitpath(IconPath)
+ip:= splitpath(imagepath)
 
 varsetcapacity(fileinfo,(fisize:= A_PtrSize + 688)) 
-(!IsObject(File:= FileOpen(IconPath,"r"))? MsgB("error" . exit()))
-fileGetSize,szfile,% IconPath
+(!IsObject(File:= FileOpen(imagepath,"r"))? MsgB("error" . exit()))
+fileGetSize,szfile,% imagepath
 VarSetCapacity(Bin,Sz_Kb:= szfile)
 sLen:= file.RawRead(Bin,Sz_Kb) ; RetrievedEncoding := File.Encoding
-(sLen<192? ((File.Close()>>192),exitapp()) : Ttip("analyzed " szfile "b"))
-Cur_W:= NumGet(Bin,6,"Char"),	sx:= HotSpot_X:= NumGet(Bin,10,"Char") 
+(sLen<192? ((File.Close()>>192),exitapp()) : Ttip("analyzed " szfile "b","Center",1000))
+Cur_W:= NumGet(Bin,6,"Char"),	sx:= HotSpot_X:= NumGet(Bin,10,"Char")
 Cur_H:= NumGet(Bin,7,"Char"),	sy:= HotSpot_Y:= NumGet(Bin,12,"Char")
 ;((((((((((((((((((((!!!!!!!!!!!****!!!!!!!!!!!!!!))))))))))))))))))))
 titl:=(((ip.ext="cur")? "Cur@" : ip.ext) . Cur_W . "*" . Cur_H)
@@ -66,13 +70,13 @@ gui,par: Add, Text,x105 y6,Y:
 gui,par: Add, Edit, gEditY vEditY y3 x121 w40 h28 -0x10000 +0x4000000 +hwndhwnd_editY,%HotSpot_Y%
 gui,par: Margin,% Marg_Parent,% Marg_Parent
 ;		cursor and magnification Slider	  !!!!!!!!))))))))))))))))))))
-SliderOptions:= "Range1-5 AltSubmit reverse NoTicks Thick y220 w200 x1 h40 +hWndpar_slider gpar_slider_glabel vScale_Factor"
+SliderOptions:= "Range1-5 AltSubmit reverse NoTicks Thick y220 w200 x1 h40 +hWndpar_slider gpar_slider_glabel vScale_Factorr"
 gui,par: Add, Slider,% SliderOptions " +0X4030100",slider ;  +E0x80008 (WS_EX_LAYERED := 0x80000),+0x30000 
 Gui,par: +Toolwindow
 Gui,par: +0x94C80000
 Gui,par: -Toolwindow
 gui,cur: New,+AlwaysOnTop +hWndG_hWnd -dpiscale -SysMenu +ToolWindow +lastfound -Caption -dpiscale ; +OwnDialogs 
-gui,cur: Add,picture, w%Cur_W%  h%Cur_H% +hWndHhicon +0x4000000,% "HICON: " _:=ico2hicon(IconPath) ;0x4000000 draw over siblings
+gui,cur: Add,picture, w%Cur_W%  h%Cur_H% +hWndHhicon +0x4000000,% "HICON: " _:=ico2hicon(imagepath) ;0x4000000 draw over siblings
 gui,par: Show,na x4000 y1300 w%parw_init%
 winset,Transparent,1,ahk_id %hWnd_Par%
 gui,par: hide ; Winset,   Style, +0x94C80000,ahk_id %hWnd_Par% 
@@ -80,7 +84,7 @@ winset,Transparent,off,ahk_id %hWnd_Par%
 gui_titlebar_disable("par") ;  ! MUST BE FIRED B4 GUISHOW !  ;
 winminimize,ahk_id %hWnd_Par%
 gui,par: Show,  ; Winset, ExStyle, -0x00000080,ahk_id %hWnd_Par%
-gui,cur: Show,% "na x" a_screenwidth-100 " y" a_screenheight-100 
+gui,cur: Show,% "na x" a_screenwidth -100 " y" a_screenheight-100 
 winset,Transparent,1,ahk_id %g_hWnd%
  win_move(hWnd_Par, (a_Screenwidth/2)-100, (a_screenheight/2)-160, "","","") ;Win_Animate(hWnd_Par,"activate slide vneg", 380)
  
@@ -124,16 +128,18 @@ return,
 CenterOffset() {
 	global parw_init,Cur_W,Scale_Factor
 	return,(parw_init-(Cur_SzFactored:= Cur_W*Scale_Factor))-(Scale_Factor>1
-	? (((parw_init/Scale_Factor)*0.65)	-((cur_w-32)*0.9)):80)
+	? (((parw_init/Scale_Factor)*0.65)	-(((cur_w)*(cur_w/32))/scale_factor)):80)
 }
-
+GuiClose:
+ExitApp
 Timertest:
 loop,1 {
+global TimerOn:=true
 	gui,par: color,000
-	sleep 100
+	sleep,100
 	(!OldFactor? OldFactor:= Scale_Factor)
 	(!oldcurw? oldcurw:= Cur_W*Scale_Factor)
-	((Cur_SzFactored>parw_init)?	("return",))
+
 	if !init2 {
 		init2:= True
 		gui,par:Add,picture,x1 y31 w200 h180 +hWndParHicon2 ; 2rem leftover hall-of-mirrors upon draw-area decrease
@@ -184,9 +190,10 @@ loop,1 {
 									,"Uint",	0
 									,"intP",	0xFF<<16|1<<24
 									,"Uint",	2 	)
-	hotspotmark2:
-	sTimer("ctrls_VisT",-1) 		;	gosub,HotspotMark
+		hotspotmark2: ;sTimer("ctrls_VisT",-1) 		;	gosub,HotspotMark
+		gosub,ctrls_VisT
 	}
+	TimerOn:= false
 }
 return,
 
@@ -195,7 +202,18 @@ return,
 ;((((((((((((((((((((!!!!!!!!!!!****!!!!!!!!!!!!!!))))))))))))))))))))
 
 Par_slider_glabel: 
-sTimer("Timertest",-10)
+	if ((Cur_W*Scale_Factorr)>parw_init)
+return,
+else {
+Scale_Factor:=Scale_Factorr
+	loop {
+		if !TimerOn {
+			gosub Timertest
+			break
+		}
+		else,sleep 20
+	}
+}
 return,
 
 Timertest2:
@@ -213,10 +231,15 @@ ord:= substr(a_thislabel,"ed")
 gSub("HotspotMark")
 return,
 
-guiclose:
-Win_Animate(hWnd_Par, "hide blend", 1300)
+guiEscape:
+exitapp,
+
+winrestore,ahk_id %hWnd_Par%
+sleep 30000
+Win_Animate(hWnd_Par,"hide blend",1300)
 timer("exitfunc",-1230)
-exit,
+sleep,1400
+exitapp,
 
 ctrls_VisT:
 loop parse,% "hwnd_editx,hwnd_edity,par_slider",`,
@@ -228,8 +251,8 @@ loop parse,% "hwnd_editx,hwnd_edity,par_slider",`,
 return,
 
 save:
-ifwinnotactive,ahk_id %hWnd_Par%
-	return,
+;ifwinnotactive,ahk_id %hWnd_Par%
+;	return,
 FileSelectFile,iconpath_New,S8,% ip.path,Save to new file,*.cur
 if fileexist(iconpath_New) {
 	MsgB("0x4","Overwrite?","Overwrite?")
@@ -250,23 +273,15 @@ return,
 ;((((((((((((((((((((!!!!!!!!!!!****!!!!!!!!!!!!!!))))))))))))))))))))
 
 WM_KEYUP(wParam, lParam){
-global hWnd_Par
+	global hWnd_Par
 	switch wParam {
-		case "27 ": ;esc
-			settimer,guiclose,-1
-			return
-		case "13": ;enter
-			gui,par: submit,nohide
-			gSub("editx")
-			gSub("edity")
-			gSub("Timertest2")
+		case "27"	: settimer,guiclose,-1	; esc
+		case "13"	: ;enter
+			gui,par	: submit,nohide
+			gSub("editx"), gSub("edity"), gSub("Timertest2")
 			send,{tab}
-		default:
-			tt(wParam "`n" Format("{1:#x}",lParam))
-
-		; case "":
-	}
-}
+		 ;default	: tt(wParam "`n" Format("{1:#x}",lParam))
+}	}
 
 OnRBUp(wParam, lParam){
 	menu,gui,show
@@ -302,7 +317,6 @@ OnDoubleClick(wParam="", lParam="", msg="", hWnd="") { ;sets new HotspotMark		;t
 	return,0 ; return a value to prevent the default handling of this message.
 }
 
-
 blackouthwnd2(hWnd,full="",gdipstart=false) {	;static tries:= 1
 	(!full=""? MsgB(full))
 	dcC:= GetDC(hWnd)
@@ -325,26 +339,19 @@ Ttip(TxT="", x:="", y="", dur="") {	;tooltip wrap can also be called with 1 or 2
 		isint(y)? (y? dur:= y) transpose potential dur arg
 		somethingElseThatMightBeDeclarableLater:=dur?dur:() 
 		switch	(tt_loc:= X)	{
-			case "center":
-				x:=	(A_screenwidth*0.5)-80
-				y:=	(A_screenheight*.5)-35
-			case "tray":
-				x:=	A_screenwidth
-				y:=	45
-			case "!tray":
-				x:=	A_screenwidth
-				y:=	A_screenheight
+			case "center" : x:=	(A_screenwidth*0.5)-80, y:=	(A_screenheight*.5)-35
+			case "tray"	  : x:=	 A_screenwidth, y:= 45
+			case "!tray"  : x:=	 A_screenwidth, y:= A_screenheight
 		}
 	} else (!y&&!dur? dur:= (x?x:-880))			;default TOuT 880ms (TOuT as param.2 (int or str))
 	((dur&&!dur=0)? (dur<100&&dur>-100)? (dur*=1000))
 	ToolTip,% TxT,% (x&&y?x:""),% (x&&y? y:""), 1 ; (y="center"?y:=(A_screenheight*.5)-35)
 	SetTimer,TOuT,% ((instr(dur,"-")||dur<0)?dur:("-" . dur))
 	return,~errOrlevel
- TOuT: 
+ TOuT:
  tooltip,
  return,
 }
-
 
 sTimer(byref Label,Rate="") {	; Settimer wrapper ; eliminates param flaw.
 	(!rate? r:=-1 : r:= Rate)	; (mS)
@@ -375,46 +382,41 @@ WM_WINDOWPOSCHANGED() {
 	return,init:=sTimer("Timertest2",-2) 
 }
 
-gSub(label){ 
+gSub(label) {
 	global
 	gosub,%label%
 	return,
 }
 
-rtn(){
-	return,exit,
-}
-
-MAKELONG(LOWORD,HIWORD,Hex=0){
+MAKELONG(LOWORD,HIWORD,Hex=0) {
 	BITS:=0x10,WORD:=0xFFFF
-	return,(!Hex)?((HIWORD<<BITS)|(LOWORD&WORD)):Format("{1:#x}",((HIWORD<<BITS)|(LOWORD&WORD)))
+	return,(!Hex)?((HIWORD<<BITS)|(LOWORD&WORD)):Format("{1:#x}"
+	,((HIWORD<<BITS)|(LOWORD&WORD)))
 }
 
-LoWord(Dword,Hex=0){
+LoWord(Dword,Hex=0) {
 	WORD:=0xFFFF
 	return,(!Hex)?(Dword&WORD):Format("{1:#x}",(Dword&WORD))
 }
 
-HiWord(Dword,Hex=0){
+HiWord(Dword,Hex=0) {
 	BITS:=0x10,WORD:=0xFFFF
 	return,(!Hex)?((Dword>>BITS)&WORD):Format("{1:#x}",((Dword>>BITS)&WORD))
 }
 
 MsgB(title="",MsgStr="",timeout="",flags="",NoModality="",icon="") {
 	(!MsgStr?(MsgStr:=title,TITLE:=""))
-	(!flags)?(flags:=0x43040):(),(!title)?(title:="Attention")  		;	NoTitle	? NoProbs
-	(!NoModality="")?(Gui(gui:="_",command   :=  "+OwnDialogs")) 		;	modal	?
+	(!flags)?(flags:=0x43040):(),(!title)?(title:="Attention")  	;	NoTitle	? NoProbs
+	(!NoModality="")?(Gui(gui:="_",command   :=  "+OwnDialogs")) 	;	modal	?
 	(!icon="")?__:=(SendWM_CoPYData(("mb" . ico2hicon(ICON))
-	, "WinEvent.ahk ahk_class AutoHotkey")):("") 						;			? headless 
-	msgbox,% flags,% title,% MsgStr,% timeout 							;	Msg	ina pissbottle.	BoWtZ
-	(!NoModality="")?(Gui(gui:="_",  command := "Destroy")) 			;	MW:22)
-	return,MsgStr 														;	22:WM)
+	, "WinEvent.ahk ahk_class AutoHotkey")):("") 					;			? headless 
+	msgbox,% flags,% title,% MsgStr,% timeout 						;	Msg	ina pissbottle.	BoWtZ
+	(!NoModality="")?(Gui(gui:="_",  command := "Destroy")) 		;	MW:22)
+	return,MsgStr 													;	22:WM)
 }
 
-ExitFunc(ExitReason, ExitCode) {
-	global
+ExitFunc:
 	Win_Animate(hWnd_Par, "hide blend", 1300)
-
 	DllCall("ReleaseDC","UInt",G_hWnd,"UInt",hdc)
 	SelectObject(hdc,obm)
 	DeleteObject(hbm)
@@ -425,26 +427,33 @@ ExitFunc(ExitReason, ExitCode) {
 	if (!(sX=HotSpot_X) || !(sY=HotSpot_Y))
 		MsgB("Save","Apply Change?")
 		if msgbox,Ok
-			exitapp
-}
+			exitapp,
+			return,
+	exitapp,
 
 menuz:
-menu, Tray, NoStandard
-menu, Tray, Add ,% "Open",             ID_VIEW_VARIABLES
+menu,Tray, NoStandard
+try menu,Tray, icon, C:\Script\AHK\CUR_HAND.ICO
+menu,Tray, Add ,% "Open",				ID_VIEW_VARIABLES
 try menu, Tray, Icon,% "Open",%			"C:\Icon\24\Gterminal_24_32.ico"
-menu, Tray, Add ,% "Open Containing",  S_OpenDir
+menu,Tray, Add ,% "Save current",		save
+menu,tray, add,% "hide me pls", 		hidetray
+try menu, tray, icon,% "hide me pls",	C:\Icon\32\32.ico
+menu,tray, add,% "dont hide pls",		donthidetray
+try menu, tray, icon,% "dont hide pls",	C:\Icon\32\32.ico
+menu, Tray, Add ,% "Open Containing",	S_OpenDir
 try menu, Tray, Icon,% "Open Containing",% "C:\Icon\24\explorer24.ico"
-menu, Tray, Add ,% "Edit Script",      ID_TRAY_EDITSCRIPT
+menu, Tray, Add ,% "Edit Script",		ID_TRAY_EDITSCRIPT
 try menu, Tray, Icon,% "Edit Script",%	"C:\Icon\24\explorer24.ico"
-menu, Tray, Add ,% "Reload",           ID_TRAY_RELOADSCRIPT
+menu, Tray, Add ,% "Reload",			ID_TRAY_RELOADSCRIPT
 try menu, Tray, Icon,% "Reload",%		"C:\Icon\24\eaa.bmp"
-menu, Tray, Add ,% "Suspend VKs",      ID_TRAY_SUSPEND
+menu, Tray, Add ,% "Suspend VKs",		ID_TRAY_SUSPEND
 try menu, Tray, Icon,% "Suspend VKs",%	"C:\Icon\24\head_fk_a_24_c1.ico"
-menu, Tray, Add ,% "Pause",            ID_TRAY_PAUSE
+menu, Tray, Add ,% "Pause",				ID_TRAY_PAUSE
 try menu, Tray, Icon,% "Pause",%		"C:\Icon\24\head_fk_a_24_c2b.ico"
-menu, Tray, Add ,% "Exit",             ID_TRAY_EXIT
+menu, Tray, Add ,% "Exit",				ID_TRAY_EXIT
 try menu, Tray, Icon,% "Exit",%			"C:\Icon\24\head_fk_a_24_c2b.ico"
-menu, gui, add, yourea cunt, exitfunc
+menu, gui, add, Save
 return,
 
 ID_TRAY_RELOADSCRIPT:
@@ -459,30 +468,39 @@ ID_TRAY_PAUSE:
 global ID_TRAY_PAUSE:= 65306
 ID_TRAY_EXIT:
 global ID_TRAY_EXIT:= 65307
-msgbox % A_ScriptName
 PostMessage,0x0111,(%a_thislabel%),,,% A_ScriptName " - AutoHotkey"
 return,
 
 AHK_NOTIFYICON(wParam, lParam) {
-	switch lParam {	;case 0x205: ; WM_RBUTTONUP ;case 0x206: ; WM_RBUTTONDBLCLK  
-	;case 0x020B: ; WM_XBUTTONDOWN 	;case 0x201: ; WM_LBUTTONDOWN ;case 0x202: ; WM_LBUTTONUP
+	switch lParam {
 		case 0x203:  ; WM_LBUTTONDBLCLK
 			Ttip("Loading Var table...")
 			sTimer("ID_VIEW_VARIABLES",-1)
-			;PostMessage, 0x0111,%ID_VIEW_VARIABLES%,,,% (A_ScriptName " - AutoHotkey")
 		case 0x0208: ; WM_MBUTTONUP  
 			Ttip("Reloading")
 			sTimer("ID_TRAY_RELOADSCRIPT",-1)
 }	}
+
+varz:
+global hdc,bin,DTopDC,HomeDC,G_hWnd,imagepath,hWnd_Par,hWndh0t,Marg_Hic,Cur_SzFactored,tl
+,pary,parw,parh,Cur_W,HotSpot_X,HotSpot_Y,ord,EditX,EditY,hwnd_editX,hwnd_editY
+,sx,sy,ParHicon2,init2,hotsDC,SRCCOPY:= 0x00330008,NOTSRCCOPY:= 0x00CC0020,Sz_Kb,parx
+,SliderOptions,hwnd_editx,hwnd_editym,CenterOffset
+return,
 
 S_OpenDir:
 Ttip("Opening: " a_scriptdir "...", 999)
 try Open_Containing(a_scriptFullPath)
 return,
 
-varz:
-global hdc,bin,DTopDC,HomeDC,G_hWnd,IconPath,hWnd_Par,hWndh0t,Marg_Hic,Cur_SzFactored,tl
-global pary,parw,parh,Cur_W,HotSpot_X,HotSpot_Y,ord,EditX,EditY,hwnd_editX,hwnd_editY,
-global sx,sy,ParHicon2,init2,hotsDC,SRCCOPY:=0x00330008,NOTSRCCOPY:=0x00CC0020,Sz_Kb,parx
-global SliderOptions,hwnd_editx,hwnd_editym, CenterOffset
+rtn() {
+	return,exit,
+}
+
+hidetray:
+donthidetray:
+switch a_thislabel {
+	case donthidetray	:	timer("hidetray",off)
+	case hidetray		:	menu,tray,noicon
+}
 return,
